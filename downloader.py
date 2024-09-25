@@ -6,7 +6,7 @@ This script downloads `.tar` files concurrently using multiprocessing.
 It supports resuming partial downloads and provides progress bars for each download.
 
 Usage:
-    python downloader.py --input download_links.tsv --retry retry.txt --output raw/ --cpus 10
+    python downloader.py --input download_link.tsv --retry retry.txt --output raw/ --cpus 10
 """
 
 import argparse
@@ -72,7 +72,13 @@ def download_file(url: str, local_filename: str) -> None:
                             if chunk:  # filter out keep-alive chunks
                                 f.write(chunk)
                                 progress_bar.update(len(chunk))
-                print(f"Download completed: {local_filename}")
+
+                current_size = os.path.getsize(local_filename) if os.path.exists(local_filename) else 0
+                if total_size is not None:
+                    if total_size <= current_size:
+                        print(f"Download completed: {local_filename}")
+                    else:
+                        raise Exception(f'Unexcepted exit. current size: {current_size}, total size: {total_size}')
             elif response.status_code == 416:
                 print(f"Download already completed: {local_filename}")
             else:
@@ -190,7 +196,7 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Concurrent File Downloader")
     parser.add_argument('--input',
                         type=str,
-                        default='download_links.tsv',
+                        default='download_link.tsv',
                         help='Path to the TSV file containing download links (default: download_links.tsv)')
     parser.add_argument('--retry',
                         type=str,
